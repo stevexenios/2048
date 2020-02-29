@@ -81,9 +81,9 @@ AgentBrain.prototype.move = function (direction) {
         });
     });
     //console.log(moved);
-    if (moved) {
-        this.addRandomTile();
-    }
+    // if (moved) {
+    //     this.addRandomTile();
+    // }
     return moved;
 };
 
@@ -137,122 +137,130 @@ AgentBrain.prototype.positionsEqual = function (first, second) {
 };
 
 function Agent() {
+    this.depthLimit = 4;
+    this.chance = true;
 };
 
 Agent.prototype.selectMove = function (gameManager) {
     var brain = new AgentBrain(gameManager);
-
+    var bestMove;
+    var bestScore = 0;
+    var recentBest, otherMove;
     // Use the brain to simulate moves
     // brain.move(i) 
     // i = 0: up, 1: right, 2: down, 3: left
     // brain.reset() resets the brain to the current game board
-
-    if(gameManager.score < 256){
-        if (brain.move(0)) return 0;
-        if (brain.move(1)) return 1;
-        if (brain.move(3)) return 3;
-        if (brain.move(2)) return 2;
+    for(var i = 0; i < 4; i++){
+        var clonedBrain = new AgentBrain(brain);
+        var currentScore = 0;
+        if(i==0 && clonedBrain.move(i)){
+            otherMove = i;
+        }
+        if(clonedBrain.move(i)){
+            currentScore = this.expectimax(clonedBrain, this.chance, this.depthLimit);
+            recentBest = i;
+            if(currentScore > bestScore){
+                bestScore = currentScore;
+                bestMove = i;
+            }
+        }
     }
-    // Maximum level to end search for best state
-    var maxLevel = 10;
-    var expectiChance = false;
-    //return this.expectiMiniMax(brain, expectiChance, maxLevel);
-    console.log(brain.grid.cellAvailable());
+    // console.log("Bad move bestMove: " + bestMove);
+    // console.log("Bad move otherMove: " + otherMove);
+    // console.log("Bad move recentBest: " + recentBest);
+    return bestMove || recentBest;
 };
 
-Agent.prototype.evaluateGrid = function (gameManager) {
-    // calculate a score for the current grid configuration
-    //console.log(gameManager.grid.cells[3][1].value);
+/**
+ * This returns teh value from the grid,
+ * based on the weightMatrix, which is 
+ * referrenced from:
+ * http://cs229.stanford.edu/proj2016/report/NieHouAn-AIPlays2048-report.pdf
+ */
+Agent.prototype.evaluateGrid = function (brain) {
+    var base = 2;
+    var exponent = 16;
+    var divisor = Math.pow(base, exponent+1);
+    var weightedGrid2 = [[Math.pow(base, exponent-12)/divisor, Math.pow(base, exponent-13)/divisor, Math.pow(base, exponent-14)/divisor, Math.pow(base, exponent-15)/divisor],
+                        [Math.pow(base, exponent-11)/divisor, Math.pow(base, exponent-10)/divisor, Math.pow(base, exponent-9)/divisor, Math.pow(base, exponent-8)/divisor],
+                        [Math.pow(base, exponent-4)/divisor, Math.pow(base, exponent-5)/divisor, Math.pow(base, exponent-6)/divisor, Math.pow(base, exponent-7)/divisor],
+                        [Math.pow(base, exponent-3)/divisor, Math.pow(base, exponent-2)/divisor, Math.pow(base, exponent-1)/divisor, Math.pow(base, exponent)/divisor]];
+    
+    var weightedGrid = [[0.135759, 0.121925, 0.102812, 0.099937],
+                       [0.0997992, 0.08884805, 0.076711, 0.0724143],
+                       [0.060654, 0.0562579, 0.037116, 0.0161889],
+                       [0.0125498, 0.00992495, 0.00575871, 0.00335193]];
 
-};
-
-Agent.prototype.gridWeighted = function(grid){
-    /**
-     * 0    1   2   3
-     * 1    2   3   4
-     * 2    3   4   8
-     * 3    4   8   16
-     */
-    var weightFactor = 16;
-    var availableCells = grid.cellsAvailable();
-    var bottomRightMax;
-    if(grid.cellAvailable[3][3]){
-        bottomRightMax = grid.cellContent[3][3].value;
-    } else{
-        bottomRightMax = 0;
-    }
-    var notOnBottomRight = false;
+    var weightedGrid2 = [[0, 0, Math.pow(base, 1), Math.pow(base, 1)],
+                        [0, Math.pow(base, 1), Math.pow(base, 3), Math.pow(base, 5)],
+                        [Math.pow(base, 1), Math.pow(base, 3), Math.pow(base, 5), Math.pow(base, 7)],
+                        [Math.pow(base, 3), Math.pow(base, 5), Math.pow(base, 7), Math.pow(base, 9)]];
+    var cells = brain.grid.cells;
+    var score = 0;
+    var count = 0;
     for(var x = 0; x < 4; x++){
         for(var y = 0; y < 4; y++){
-            // ...(y,x)
-            if(grid.cellContent[y][x].value != null 
-                && grid.cellContent[y][x].value > bottomRightMax 
-                && (x != 3 && y != 3)){
-                notOnBottomRight = true;
-            }
-        }
-    }
-    if(notOnBottomRight){
-        var closeToBottomRight =  grid.cellContent[3][2].value;
-        var notCloseToBottomRight = false;
-        for(var x = 0; x < 4; x++){
-            for(var y = 0; y < 4; y++){
-                // ...(y,x)
-                if(grid.cellContent[y][x].value > bottomRightMax && (x != 2 && y != 3)){
-                    notCloseToBottomRight = true;
+            if(cells[x][y] !== null){
+                // console.log("Cell Values: " + brain.grid.cells[x][y].value);
+                // console.log("Weighted Values: " + weightedGrid[x][y]);
+                score += cells[x][y].value * weightedGrid[x][y];
+                if(x > 0 && cells[x-1][y] !== null){
+                    if(cells[x-1][y] == cells[x][y]){ // More Score for adjacent row tiles
+                        score += cells[x][y].value / 2048;
+                    }
                 }
+                if(y > 0 && cells[x][y-1] !== null){
+                    if(cells[x][y-1] == cells[x][y]){ // More Score for adjacent row tiles
+                        score += cells[x][y].value / 2048;
+                    }
+                }
+            } else { 
+                count++;
             }
         }
-
-    } else {
-        return weightFactor;
     }
-}
+    //     NEED BETTER HEURISTIC FOR FREE SPACES
+    if(count < 8){
+        score -= score * count / 16; 
+    } else {
+        score += score * count / 16;
+    }
+    // console.log(score);
+    return score;
+};
 
-function expectiMiniMax(brain, chance, level){
+Agent.prototype.expectimax = function (brain, chance, depthLimit){
     // Terminating condition
-    if(level == 0){
+    if(depthLimit == 0 || brain.over){
         return this.evaluateGrid(brain);
     }
-    // notChance = true, we calc prob..otherwise state
-    chance = !chance;
-    level--;
+    depthLimit--;
     if(chance){
-        var maxScore = -1;
-        var bestMove = -1;
+        var openTiles = brain.grid.availableCells();
+        var summation = 0;
+        for(var i = 0; i < openTiles.length; i++){
+            var p2 = new Tile(openTiles[i], 2);
+            var b2 = new AgentBrain(brain);
+            b2.grid.insertTile(p2);
+            var p4 = new Tile(openTiles[i], 4);
+            var b4 = new AgentBrain(brain);
+            b4.grid.insertTile(p4);
+            summation += (0.9 * this.expectimax(b2, chance, depthLimit) + 0.1 * this.expectimax(b4, chance, depthLimit)); 
+        }
+        return summation /= openTiles.length;
+    } else {
+        // console.log("No Chance 1: " + chance);
+        var maxScore = 0;
         for(var i = 0; i < 4; i++){
-            var conditionState = new AgentBrain(brain);
-            if(conditionState.move(i)){
-                var conditionScore = this.expectiMiniMax(conditionState, chance, level);
-                if(conditionScore > maxScore) {
-                    maxScore = conditionScore;
-                    bestMove = i;
+            var clonedBrain = new AgentBrain(brain);
+            // console.log("Here " + i);
+            if(clonedBrain.move(i)){
+                var evaluatedScore = this.expectimax(clonedBrain, !chance, depthLimit);
+                if(evaluatedScore > maxScore) {
+                    maxScore = evaluatedScore;
                 }
             } 
         }
         return maxScore;
-    } else {
-        var openTiles = brain.availableCells();
-        return calculateProbSum(brain, openTiles, chance, level); 
-    }
-}
-
-function calculateProbSum(brain, openTiles, chance, level){
-    var prob2 = 0, prob4 = 0;
-    level--;
-    for(var i = 0; i < openTiles.length; i++){
-        var prob2Tile = new Tile(openTiles[i], 2);
-        var prob4Tile = new Tile(openTiles[i], 4);
-        var cloned2Brain = new AgentBrain(brain);
-        var cloned4Brain = new AgentBrain(brain);
-        cloned2Brain.insertTile(prob2Tile);
-        cloned4Brain.insertTile(prob4Tile);
-        prob2 += expectiMiniMax(cloned2Brain, chance, level);
-        prob4 += expectiMiniMax(cloned4Brain, chance, level); 
-    }
-    return (prob2/openTiles.length) + (prob4/openTiles.length);
-<<<<<<< HEAD
-}
-=======
-}
->>>>>>> 1b25579e19c33c21c6d7dcba3a95a80f1aee5e22
+    } 
+};

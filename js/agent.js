@@ -251,4 +251,8 @@ function calculateProbSum(brain, openTiles, chance, level){
         prob4 += expectiMiniMax(cloned4Brain, chance, level); 
     }
     return (prob2/openTiles.length) + (prob4/openTiles.length);
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 1b25579e19c33c21c6d7dcba3a95a80f1aee5e22

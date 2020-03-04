@@ -248,8 +248,6 @@ Agent.prototype.evaluateGrid = function (brain) {
 };
 
 /**
- * This heuristic proved to be almost less than useless.
- * 
  * This smoothness function I borrowed from the github account and repo linked below.
  * 
  * The previous smoothness function was not well predetermined, so the dummy values 
@@ -286,9 +284,6 @@ Agent.prototype.smoothingFactor = function(brain){
     return smoothingScore;
 }
 
-/**
- * This Heuristic proved to be useless.
- */
 Agent.prototype.freeCellPenalty = function(grid, score){
     var penalty = 0;
     // console.log(grid.availableCells().length)

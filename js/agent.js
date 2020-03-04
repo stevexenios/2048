@@ -1,3 +1,11 @@
+/**
+ * Steve Mwangi 
+ * TCSS 435 AI
+ * Assignment 3 
+ * 2048
+ *  
+ */
+
 // helper functions
 function randomInt(n) {
     return Math.floor(Math.random() * n);
@@ -175,7 +183,7 @@ Agent.prototype.initExpectiMax = function(brain){
      * These are variables to hold the most recent moves so
      * that we don't get bad moves. Also last var keeps score
      */
-    var bestMove, recentMove, bestScore = 0;
+    var bestMove, recentMove, bestScore = -Infinity;
     for(var i = 0; i < 4; i++){
         var clonedBrain = new AgentBrain(brain);
         if(clonedBrain.move(i)){
@@ -237,12 +245,12 @@ Agent.prototype.evaluateGrid = function (brain) {
             }
         }
     }
-    //score += (0.1 * this.smoothingFactor(brain));
+    // score += (0.1 * this.smoothingFactor(brain));
     /**
      * This is a heuristic to directly relate scores and free cells,
      * more free cells, more score.
      */
-    //score = this.freeCellPenalty(brain.grid, score);
+    // score = this.freeCellPenalty(brain.grid, score);
     // // console.log(score);
     return score;
 };
@@ -287,7 +295,7 @@ Agent.prototype.smoothingFactor = function(brain){
 Agent.prototype.freeCellPenalty = function(grid, score){
     var penalty = 0;
     // console.log(grid.availableCells().length)
-    if(grid.availableCells().length < 10){
+    if(grid.availableCells().length < 4){
         penalty = score * (1-grid.availableCells().length / 16);
     }
     var reward = score + score * grid.availableCells().length / 16;

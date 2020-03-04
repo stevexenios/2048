@@ -248,7 +248,7 @@ Agent.prototype.evaluateGrid = function (brain) {
 };
 
 /**
- * This heuristic proved to be less than useless.
+ * This heuristic proved to be almost less than useless.
  * 
  * This smoothness function I borrowed from the github account and repo linked below.
  * 

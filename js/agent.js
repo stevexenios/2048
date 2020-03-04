@@ -175,12 +175,11 @@ Agent.prototype.initExpectiMax = function(brain){
      * These are variables to hold the most recent moves so
      * that we don't get bad moves. Also last var keeps score
      */
-    var bestMove, recentMove, bestScore = 0;
+    var bestMove, bestScore = -Infinity;
     for(var i = 0; i < 4; i++){
         var clonedBrain = new AgentBrain(brain);
         if(clonedBrain.move(i)){
             var currentScore = this.expectimax(clonedBrain, this.chance, this.depthLimit);
-            recentMove = i;
             // console.log("Current Score: " + currentScore);
             // console.log("Best Score: " + bestScore);
             if(currentScore > bestScore){
@@ -222,10 +221,6 @@ Agent.prototype.evaluateGrid = function (brain) {
                        [0.060654, 0.0562579, 0.037116, 0.0161889],
                        [0.0125498, 0.00992495, 0.00575871, 0.00335193]];
 
-    var weightedGrid3 = [[Math.pow(base, exponent-15), Math.pow(base, exponent-14), Math.pow(base, exponent-13), Math.pow(base, exponent-12)],
-                        [Math.pow(base, exponent-8), Math.pow(base, exponent-9), Math.pow(base, exponent-10), Math.pow(base, exponent-11)],
-                        [Math.pow(base, exponent-7), Math.pow(base, exponent-6), Math.pow(base, exponent-5), Math.pow(base, exponent-4)],
-                        [Math.pow(base, exponent), Math.pow(base, exponent-1), Math.pow(base, exponent-2), Math.pow(base, exponent-3)]];
     var cells = brain.grid.cells;
     var score = 0;
     for(var x = 0; x < 4; x++){

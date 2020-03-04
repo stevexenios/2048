@@ -162,8 +162,7 @@ function Agent() {
  */
 Agent.prototype.selectMove = function (gameManager) {
     var brain = new AgentBrain(gameManager);
-    var twoMoves = this.initExpectiMax(brain);
-    return twoMoves.move1 || twoMoves.move2;
+    return this.initExpectiMax(brain) // twoMoves.move1 || twoMoves.move2;
 };
 
 /**
@@ -182,6 +181,8 @@ Agent.prototype.initExpectiMax = function(brain){
         if(clonedBrain.move(i)){
             var currentScore = this.expectimax(clonedBrain, this.chance, this.depthLimit);
             recentMove = i;
+            // console.log("Current Score: " + currentScore);
+            // console.log("Best Score: " + bestScore);
             if(currentScore > bestScore){
                 bestScore = currentScore;
                 bestMove = i;
@@ -190,7 +191,7 @@ Agent.prototype.initExpectiMax = function(brain){
     }
     // console.log("Bad move bestMove: " + bestMove);
     // console.log("Bad move recentMove: " + recentMove);
-    return {move1: bestMove, move2:recentMove};
+    return  bestMove; // {move1: bestMove, move2:recentMove};
 }
 
 /**
@@ -230,23 +231,25 @@ Agent.prototype.evaluateGrid = function (brain) {
     for(var x = 0; x < 4; x++){
         for(var y = 0; y < 4; y++){
             if(cells[x][y] !== null){
-                // console.log("Cell Values: " + brain.grid.cells[x][y].value);
+                // console.log("Cell Values: " + cells[x][y].value);
                 // console.log("Weighted Values: " + weightedGrid[x][y]);
                 score += (cells[x][y].value * weightedGrid[x][y]);
             }
         }
     }
-    score += (0.1 * this.smoothingFactor(brain));
+    //score += (0.1 * this.smoothingFactor(brain));
     /**
      * This is a heuristic to directly relate scores and free cells,
      * more free cells, more score.
      */
-    score = this.freeCellPenalty(brain.grid, score);
+    //score = this.freeCellPenalty(brain.grid, score);
     // // console.log(score);
     return score;
 };
 
 /**
+ * This heuristic proved to be less than useless.
+ * 
  * This smoothness function I borrowed from the github account and repo linked below.
  * 
  * The previous smoothness function was not well predetermined, so the dummy values 
@@ -283,17 +286,21 @@ Agent.prototype.smoothingFactor = function(brain){
     return smoothingScore;
 }
 
+/**
+ * This Heuristic proved to be useless.
+ */
 Agent.prototype.freeCellPenalty = function(grid, score){
-    var basePortion = 1;
     var penalty = 0;
-    if(grid.availableCells().length < 8){
+    // console.log(grid.availableCells().length)
+    if(grid.availableCells().length < 10){
         penalty = score * (1-grid.availableCells().length / 16);
     }
-    var reward = score + score * basePortion * grid.availableCells().length / 16;
+    var reward = score + score * grid.availableCells().length / 16;
     return reward - penalty; 
 }
 
-Agent.prototype.expectimax = function (brain, chance, depthLimit){
+Agent.prototype.expectimax = function(brain, chance, depthLimit){
+    // console.log(chance)
     // Terminating condition
     if(depthLimit == 0) { //  || brain.over){
         return this.evaluateGrid(brain);
@@ -301,19 +308,22 @@ Agent.prototype.expectimax = function (brain, chance, depthLimit){
     depthLimit--;
     if(chance){
         var openTiles = brain.grid.availableCells();
-        const probabTiles = 1 / openTiles.length;
+        // console.log("Here : " + probabTiles + openTiles.length)
         var summation = 0;
         for(var i = 0; i < openTiles.length; i++){
             var p2 = new Tile(openTiles[i], 2);
-            var b2 = new AgentBrain(brain);
-            b2.grid.insertTile(p2);
             var p4 = new Tile(openTiles[i], 4);
-            var b4 = new AgentBrain(brain);
-            b4.grid.insertTile(p4);
-            summation += 0.9 * this.expectimax(b2, !chance, depthLimit);
-            summation += 0.1 * this.expectimax(b4, !chance, depthLimit); 
+
+            brain.grid.insertTile(p2);
+            summation += 0.9 * this.expectimax(brain, !chance, depthLimit);
+            brain.grid.removeTile(p2);
+
+            brain.grid.insertTile(p4);            
+            summation += 0.1 * this.expectimax(brain, !chance, depthLimit);
+            brain.grid.removeTile(p4); 
+            // console.log("Summation: " + summation);
         }
-        return summation * probabTiles;
+        return summation / openTiles.length;
     } else {
         // console.log("No Chance 1: " + chance);
         var maxScore = 0;
@@ -327,6 +337,7 @@ Agent.prototype.expectimax = function (brain, chance, depthLimit){
                 }
             } 
         }
+        // console.log("Max Score: " + maxScore);
         return maxScore;
     } 
 };
